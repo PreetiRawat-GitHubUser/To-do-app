@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>To-Do List</title>
+  <style>
+    /* Basic CSS styling */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .todo {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>To-Do List</h1>
+  <div id="todo-list"></div>
+  <h2>Add New To-Do</h2>
+  <form id="todo-form">
+    <input type="text" id="title" placeholder="Title" required>
+    <input type="text" id="description" placeholder="Description" required>
+    <button type="submit">Add</button>
+  </form>
+
+  <script>
+    async function deleteTodo(id) {
+      console.log(`Attempting to delete todo with ID: ${id}`);
+      const response = await fetch(`/todos/${id}`, {
+        method: 'DELETE'
+      });
+  
+      if (response.ok) {
+        console.log('Todo deleted successfully');
+        fetchTodos(); // Refresh the list of todos after deletion
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to delete todo', response.status, errorText);
+      }
+    }
+  
+    async function fetchTodos() {
+      const response = await fetch('/todos');
+      const todos = await response.json();
+      const todoList = document.getElementById('todo-list');
+      todoList.innerHTML = '';
+      todos.forEach(todo => {
+        const todoItem = document.createElement('div');
+        todoItem.className = 'todo';
+        todoItem.innerHTML = `
+          <h3>${todo.title}</h3>
+          <p>${todo.description}</p>
+          <button onclick="deleteTodo('${todo._id}')">Delete</button>
+          <button onclick="editTodo('${todo._id}')">Edit</button>
+        `;
+        todoList.appendChild(todoItem);
+      });
+    }
+  
+    async function addTodo(event) {
+      event.preventDefault();
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+  
+      await fetch('/todos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title, description })
+      });
+  
+      fetchTodos();
+      document.getElementById('todo-form').reset();
+    }
+  
+    async function editTodo(id) {
+      const title = prompt('Enter new title:');
+      const description = prompt('Enter new description:');
+  
+      await fetch(`/todos/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title, description })
+      });
+  
+      fetchTodos();
+    }
+  
+    document.getElementById('todo-form').addEventListener('submit', addTodo);
+    fetchTodos(); // Initial fetch of todos when the page loads
+  </script>
+  
+</body>
+</html>
